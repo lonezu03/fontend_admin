@@ -8,6 +8,8 @@
 //   styled,
 //   Paper,
 // } from "@mui/material";
+import  { useState } from "react";
+import EditProduct from "../EditProduct";
 import { useDispatch,useSelector } from 'react-redux';
 import {deleteProduct} from '../../redux/products/productThunks'
  
@@ -20,7 +22,30 @@ const Products = () => {
  
   const productList  = useSelector(Product);
   //console.log("lay dc ds product roi ne", productList)
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const handleEdit = (id) => {
+    // Tìm sản phẩm cần chỉnh sửa
+    const productToEdit = productList.find((product) => product.id === id);
+    console.log(productToEdit);
+    if (productToEdit) {
 
+      setSelectedProduct(productToEdit);
+      setIsEditing(true); // Hiển thị component EditProduct
+    }
+  };
+  const handleSaveEdit = (updatedProduct) => {
+    //onSaveEdit(updatedProduct); // Gọi hàm lưu thay đổi (từ props)
+    setIsEditing(false); // Đóng form chỉnh sửa
+    setSelectedProduct(null);
+    window.location.reload(); // Làm mới trang
+
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false); // Đóng form chỉnh sửa
+    setSelectedProduct(null);
+  };
 
   
   const handleDelete = (id) => {
@@ -42,11 +67,12 @@ const Products = () => {
         </thead>
         <tbody>
           {productList.map((product) => (
+            
             <tr key={product.id} className="hover:bg-gray-100">
-              <td className="border border-gray-300 px-4 py-2">{product.images.$values.length > 0 ? (
+              <td className="border border-gray-300 px-4 py-2">{product.variants.$values.length > 0 ? (
           <img
-            src={product.images.$values[0].url} // Chuyển đổi Base64 thành URL hình ảnh
-            alt={product.images.$values.name}
+            src={product.image} 
+            alt={product.variants.$values.id}
             className="w-12 h-12 rounded-lg object-cover"
             />
         ) : (
@@ -67,6 +93,22 @@ const Products = () => {
                 >
                   Xóa
                 </button>
+                <button
+                  className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-700"
+                  onClick={() => handleEdit(product.id)}
+                >
+                  Sửa
+                </button>
+                {/* Component chỉnh sửa sản phẩm */}
+                {isEditing && selectedProduct && (
+                  <EditProduct
+                    product={selectedProduct}
+                    open={isEditing}
+                    onSave={handleSaveEdit}
+                    onCancel={handleCancelEdit}
+                    
+                  />
+                )}
               </td>
             </tr>
           ))}

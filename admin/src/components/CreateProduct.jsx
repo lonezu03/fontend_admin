@@ -33,7 +33,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 // Mock Data (Replace with Redux selectors if necessary)
-export const mockMaterials = ["Leather", "Cotton", "Polyester", "Wool", "Silk"];
+export const mockMaterials = [
+  { id: 1, label: "Leather" },
+  { id: 2, label: "Cotton" },
+  { id: 3, label: "Polyester" },
+  { id: 4, label: "Wool" },
+  { id: 5, label: "Silk" },
+];
+
 export const mockColors = [
   { id: 1, label: "Red", value: "#FF0000" },
   { id: 2, label: "Green", value: "#00FF00" },
@@ -129,116 +136,79 @@ const CreateProductDialog = ({ open, handleClose }) => {
     });
   };
 
-  const handleSubmit = async () => {
-    try {
-      // Gửi yêu cầu tạo sản phẩm
-      const productResponse = await fetch("http://localhost:5224/api/product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: 0,
-          name: ProductCreate.productname,
-          material_Id: mockMaterials.indexOf(ProductCreate.material) + 1,
-          description: ProductCreate.description[0].description,
-          status: "active",
-          price: ProductCreate.price,
-          gender_Id: parseInt(ProductCreate.gender),
-        }),
-      });
-  
-      const createdProduct = await productResponse.json();
-  
-      // Nếu API trả về id = 0, tìm sản phẩm vừa tạo
-      let productId = createdProduct.id;
-      if (productId === 0) {
-        const productsResponse = await fetch("http://localhost:5224/api/product");
-        const allProducts = await productsResponse.json();
-  
-        // Tìm bản ghi vừa được tạo dựa trên tên
-        const latestProduct = allProducts.$values.find(
-          (product) => product.name === ProductCreate.productname
-        );
-        console.log("Product cuoi la: ",latestProduct)
-        productId = latestProduct?.id || 0; // Lấy ID từ danh sách
-      }
-  
-      if (productId === 0) {
-        throw new Error("Failed to retrieve product ID");
-      }
-  
-      // Tạo các variants dựa trên ID sản phẩm
-      const variantRequests = [];
-      ProductCreate.colors.forEach((colorId) => {
-        ProductCreate.sizes.forEach((sizeId) => {
-          variantRequests.push(
-            fetch("http://localhost:5224/api/variant", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                id: 0,
-                product_Id: productId,
-                color_Id: colorId,
-                size_Id: sizeId,
-                description_Id: 1,
-                category_Id: ProductCreate.category,
-              }),
-            })
-          );
-        });
-      });
-  
-      // Gửi tất cả yêu cầu tạo Variants
-      await Promise.all(variantRequests);
-  
-      // Fetch danh sách Variants để lấy ID của Variant cuối cùng
-      const variantsResponse = await fetch("http://localhost:5224/api/variant");
-      const variants = await variantsResponse.json();
-  
-      // Lấy ID của Variant cuối cùng
-      const lastVariant = variants.$values[variants.$values.length - 1];
-      const variantId = lastVariant?.id || 0;
-  
-      if (variantId === 0) {
-        throw new Error("Failed to retrieve variant ID for image upload");
-      }
-  
-      // Upload ảnh
-      if (ProductCreate.Image) {
-        const formData = new FormData();
-        formData.append("file", ProductCreate.Image);
-        formData.append("variantId", variantId); // variantId được lấy từ variant vừa tạo.
-        console.log("FormData contents: ",ProductCreate.Image);
-for (let [key, value] of formData.entries()) {
-  console.log(key, value);
-}
+const handleSubmit = async () => {
+  try {
+    // Tạo FormData để gửi toàn bộ dữ liệu sản phẩm và ảnh
+    const formData = new FormData();
 
-        const uploadUrl = `http://localhost:5224/api/image/upload?variantId=${variantId}`; // variantId được lấy từ variant vừa tạo
-  
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "POST",
-          body: formData,
-        });
-  
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error("Upload failed:", errorText);
-          throw new Error("Image upload failed");
-        }
-  
-        const uploadResult = await uploadResponse.json();
-        console.log("Image uploaded successfully:", uploadResult);
-      }
-  
-      // Bước 3: Hoàn tất quy trình
-      toast.success("Product, variants, and image uploaded successfully!");
-      resetForm();
-      handleClose();
-    } catch (error) {
-      console.error(error);
-      toast.error("An error occurred while creating the product, variants, or uploading the image.");
+    // Thêm thông tin sản phẩm vào FormData
+    formData.append("name", ProductCreate.productname);
+    formData.append("material_Id", ProductCreate.material);
+    formData.append("description", ProductCreate.description[0].description);
+    formData.append("status", "active");
+    formData.append("price", ProductCreate.price);
+    formData.append("gender_Id", parseInt(ProductCreate.gender));
+    formData.append("category_Id", ProductCreate.category);
+
+    // Thêm ảnh vào FormData nếu có
+    if (ProductCreate.Image) {
+      formData.append("imageFile", ProductCreate.Image);
     }
-  };
-  
+
+    // Gửi yêu cầu tạo sản phẩm kèm ảnh
+    const productResponse = await fetch("http://localhost:5224/api/product", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!productResponse.ok) {
+      const errorText = await productResponse.text();
+      throw new Error(`Product creation failed: ${errorText}`);
+    }
+
+    const createdProduct = await productResponse.json();
+    const productId = createdProduct.id;
+
+    if (!productId) {
+      throw new Error("Failed to retrieve product ID");
+    }
+
+    // Tạo các variants cho sản phẩm
+    const variantRequests = [];
+    ProductCreate.colors.forEach((colorId) => {
+      ProductCreate.sizes.forEach((sizeId) => {
+        variantRequests.push(
+          fetch("http://localhost:5224/api/variant", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: 0,
+              product_Id: productId,
+              color_Id: colorId,
+              size_Id: sizeId,
+              description_Id: 1,
+              category_Id: ProductCreate.category,
+            }),
+          })
+        );
+      });
+    });
+
+    // Gửi tất cả yêu cầu tạo Variants
+    await Promise.all(variantRequests);
+
+    // Thông báo thành công
+    toast.success("Product and variants created successfully!");
+    resetForm();
+    handleClose();
+    window.location.reload(); // Làm mới trang
+
+  } catch (error) {
+    console.error(error);
+    toast.error("An error occurred while creating the product or variants.");
+  }
+};
+
   return (
     <div>
       <Dialog fullWidth maxWidth="lg" open={open} onClose={handleClose}>
@@ -278,14 +248,15 @@ for (let [key, value] of formData.entries()) {
                         />
                       </Grid>
                       <Grid item xs={4}>
-                        <Autocomplete
-                         options={mockMaterials}
-  getOptionLabel={(option) => option} // Mock Material không có id, sử dụng trực tiếp
-  value={ProductCreate.material || null}
-  onChange={(e, value) => handleInputChange("material", value || "")}
-  renderInput={(params) => <TextField {...params} label="Material" />}
-                        />
-                      </Grid>
+                      <Autocomplete
+                        options={mockMaterials}
+                        getOptionLabel={(option) => option.label} // Key chính xác là "label"
+                        value={mockMaterials.find((mat) => mat.id === ProductCreate.material) || null}
+                        onChange={(e, value) => handleInputChange("material", value ? value.id : "")}
+                        renderInput={(params) => <TextField {...params} label="Material" />}
+                      />
+                    </Grid>
+
                     </Grid>
                   }
                 />
