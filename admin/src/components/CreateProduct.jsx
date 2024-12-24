@@ -22,42 +22,61 @@ import {
   Autocomplete,
   TextField,
   Checkbox,
+  Backdrop, CircularProgress,
   FormControlLabel,
 } from "@mui/material";
+
 import TestFieldSmall from "../Input/TestFieldSmall";
 import TestFiedComponent from "../Input/TestFiedComponent";
 import TestArial from "../Input/TestArial";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 //import { CreateProduct } from "../Redux/Product";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 // Mock Data (Replace with Redux selectors if necessary)
 export const mockMaterials = [
-  { id: 1, label: "Leather" },
-  { id: 2, label: "Cotton" },
-  { id: 3, label: "Polyester" },
-  { id: 4, label: "Wool" },
-  { id: 5, label: "Silk" },
+  { id: 1, label: "Cotton" },
+  { id: 2, label: "Polyester" },
+  { id: 3, label: "Silk" },
+  { id: 8, label: "Denim" },
+  { id: 9, label: "Leather" },
+  { id: 10, label: "Nylon" },
+  { id: 11, label: "Rayon" },
+  { id: 12, label: "Linen" },
+  { id: 13, label: "Spandex" },
+  { id: 14, label: "Cashmere" },
 ];
+
 
 export const mockColors = [
   { id: 1, label: "Red", value: "#FF0000" },
-  { id: 2, label: "Green", value: "#00FF00" },
-  { id: 3, label: "Blue", value: "#0000FF" },
-  { id: 4, label: "Black", value: "#000000" },
+  { id: 2, label: "Blue", value: "#0000FF" },
+  { id: 3, label: "Green", value: "#00FF00" },
+  { id: 1004, label: "Black", value: "#000000" },
+  { id: 1005, label: "White", value: "#FFFFFF" },
+  { id: 1006, label: "Gray", value: "#808080" },
+  { id: 1010, label: "Yellow", value: "#FFFF00" },
+  { id: 1011, label: "Pink", value: "#FFC0CB" },
+  { id: 1012, label: "Purple", value: "#800080" },
+  { id: 1013, label: "Orange", value: "#FFA500" },
 ];
+
 export const mockSizes = [
   { id: 1, label: "S" },
   { id: 2, label: "M" },
   { id: 3, label: "L" },
-  { id: 4, label: "XL" },
+  { id: 1004, label: "XL" },
+  { id: 1005, label: "XXL" },
+
+
 ];
 export const mockCategories =  [
-  { id: 1, label: "Clothing" },
-  { id: 2, label: "Footwear" },
-  { id: 3, label: "Accessories" },
-  { id: 4, label: "Shoes" },
+  { id: 1, label: "Áo" },
+  { id: 2, label: "Áo khoác" },
+  { id: 3, label: "Quần" },
 ];
 export const mockGenders = [
   { id: 1, label: "Male" },
@@ -67,6 +86,7 @@ export const mockGenders = [
 
 const CreateProductDialog = ({ open, handleClose }) => {
   const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false); // Trạng thái tải
 
   const [ProductCreate, setProductCreate] = useState({
     productname: "",
@@ -139,6 +159,8 @@ const CreateProductDialog = ({ open, handleClose }) => {
 const handleSubmit = async () => {
   try {
     // Tạo FormData để gửi toàn bộ dữ liệu sản phẩm và ảnh
+    setIsLoading(true); // Hiển thị trạng thái tải
+
     const formData = new FormData();
 
     // Thêm thông tin sản phẩm vào FormData
@@ -146,7 +168,7 @@ const handleSubmit = async () => {
     formData.append("material_Id", ProductCreate.material);
     formData.append("description", ProductCreate.description[0].description);
     formData.append("status", "active");
-    formData.append("price", ProductCreate.price);
+    formData.append("price", ProductCreate.sellingprice);
     formData.append("gender_Id", parseInt(ProductCreate.gender));
     formData.append("category_Id", ProductCreate.category);
 
@@ -160,13 +182,18 @@ const handleSubmit = async () => {
       method: "POST",
       body: formData,
     });
+   const createdProduct = await productResponse.json();
 
-    if (!productResponse.ok) {
-      const errorText = await productResponse.text();
-      throw new Error(`Product creation failed: ${errorText}`);
+  // Kiểm tra nếu yêu cầu không thành công
+  if (!productResponse.ok) {
+    if (createdProduct.message === "Product name already exists.") {
+      alert("Product name already exists.");
+    } else {
+      throw new Error(`Product creation failed: ${createdProduct.message || "Unknown error"}`);
     }
-
-    const createdProduct = await productResponse.json();
+  } else {
+    // Thành công: thực hiện logic khác (nếu có)
+    //const createdProduct = await productResponse.json();
     const productId = createdProduct.id;
 
     if (!productId) {
@@ -198,14 +225,35 @@ const handleSubmit = async () => {
     await Promise.all(variantRequests);
 
     // Thông báo thành công
-    toast.success("Product and variants created successfully!");
-    resetForm();
+    toast.success("Sản phẩm đã được tạo thành công!", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });    resetForm();
     handleClose();
+    //alert("Product created successfully!");
+
     window.location.reload(); // Làm mới trang
+  }
+    
 
   } catch (error) {
     console.error(error);
-    toast.error("An error occurred while creating the product or variants.");
+    toast.error("Tạo sản phẩm không thành công !", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+    }finally {
+    setIsLoading(false); // Tắt trạng thái tải
   }
 };
 
@@ -320,7 +368,7 @@ const handleSubmit = async () => {
   />
 </ListItem>
               <Divider />
-              <ListItem>
+              {/* <ListItem>
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -330,29 +378,37 @@ const handleSubmit = async () => {
                   }
                   label="Male"
                 />
-              </ListItem>
+              </ListItem> */}
               <ListItem>
-  <ListItemText
-    primary={
+              <ListItemText
+  primary={
+    <div>
+      <Typography variant="h6">Size</Typography>
       <div>
-        <Typography variant="h6">Size</Typography>
-        <RadioGroup
-          row
-          value={ProductCreate.sizes}
-          onChange={(e) => handleInputChange("sizes", [e.target.value])}
-        >
-           {mockSizes.map((size) => (
-    <FormControlLabel
-      key={size.id}
-      value={size.id}
-      control={<Radio />}
-      label={size.label}
-    />
-  ))}
-        </RadioGroup>
+        {mockSizes.map((size) => (
+          <FormControlLabel
+            key={size.id}
+            control={
+              <Checkbox
+                checked={ProductCreate.sizes.includes(size.id)} // Kiểm tra size đã chọn
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  const newSizes = isChecked
+                    ? [...ProductCreate.sizes, size.id] // Thêm size nếu được chọn
+                    : ProductCreate.sizes.filter((s) => s !== size.id); // Loại bỏ size nếu bỏ chọn
+
+                  handleInputChange("sizes", newSizes); // Cập nhật state
+                }}
+              />
+            }
+            label={size.label}
+          />
+        ))}
       </div>
-    }
-  />
+    </div>
+  }
+/>
+
 </ListItem>
 <ListItem>
   <ListItemText
@@ -386,14 +442,31 @@ const handleSubmit = async () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant="outlined" onClick={handleSubmit}>
-            Create
-          </Button>
+        <div>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSubmit}
+        disabled={isLoading} // Vô hiệu hóa nút khi tải
+      >
+        {isLoading ? "Processing..." : "Create Product"}
+      </Button>
+
+      {/* Backdrop với CircularProgress */}
+      <Backdrop
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading} // Hiển thị khi đang tải
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    </div>
           <Button variant="text" color="error" onClick={handleClose}>
             Close
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ToastContainer />
     </div>
   );
 };

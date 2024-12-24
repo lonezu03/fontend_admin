@@ -9,10 +9,17 @@ function App() {
 
   return (
     <Provider store={store}>
-      <div>
+       <div className="flex h-screen gap-[120px]">
+      {/* Menu */}
+      <div className="w-1/4 bg-gray-100 flex flex-col   ">
         <Menu />
+      </div>
+
+      {/* Product */}
+      <div className="w-3/4 flex  bg-white">
         <Product />
       </div>
+    </div>
     </Provider>
   )
 }

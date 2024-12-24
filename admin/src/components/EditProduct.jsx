@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchProducts } from "../redux/products/productThunks";
 import { useDispatch, useSelector } from "react-redux";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 import {
@@ -18,7 +19,9 @@ import {
   Grid,
   Checkbox,
   FormControlLabel,
-  Radio,
+  Radio,  
+  Backdrop, CircularProgress,
+
   RadioGroup,
   Typography,
   Breadcrumbs,
@@ -35,6 +38,7 @@ import {
 
 const EditProduct = ({ product, open, onSave, onCancel }) => {
   const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false); // Trạng thái tải
 
   const [formData, setFormData] = useState({
     productname: "",
@@ -90,6 +94,8 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
     }
 
     try {
+      setIsLoading(true); // Hiển thị trạng thái tải
+
       const formDataToSend = new FormData();
       formDataToSend.append("id", product.id);
       formDataToSend.append("name", formData.productname);
@@ -153,12 +159,28 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
       );
       
       await Promise.all(variantRequests);
-      toast.success("Product and variants updated successfully!");
-      
+      toast.success("Sản phẩm đã được xóa!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });      
       onSave();
     } catch (error) {
       console.error(error);
-      toast.error("An error occurred while updating the product or variants.");
+      toast.error("Sửa sản phẩm thất bại", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });    }finally {
+      setIsLoading(false); // Tắt trạng thái tải
     }
   };
 
@@ -288,7 +310,10 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
           Cancel
         </Button>
       </DialogActions>
+            <ToastContainer />
+      
     </Dialog>
+    
   );
 };
 
