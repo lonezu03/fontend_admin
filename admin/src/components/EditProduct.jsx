@@ -111,14 +111,14 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
           if (validationError) {
             toast.error(validationError, {
               position: "top-right",
-              autoClose: 3000,
+              autoClose: 1000,
               hideProgressBar: true,
               closeOnClick: true,
               pauseOnHover: true,
               draggable: true,
-              progress: undefined,
+             // progress: undefined,
             });
-            return; // Dừng nếu có lỗi
+            return; 
           }
 
       setIsLoading(true); // Hiển thị trạng thái tải
@@ -214,7 +214,7 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onCancel}>
       <DialogTitle>
-      <Typography variant="h6" component="h3" >Create Product</Typography>
+      <Typography variant="h6" component="h3" >Edit Product</Typography>
       <Breadcrumbs aria-label="breadcrumb">
           <Link to="/">Home</Link>
           <Typography color="text.primary">Edit Product</Typography>

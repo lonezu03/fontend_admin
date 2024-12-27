@@ -170,7 +170,7 @@ const CreateProductDialog = ({ open, handleClose }) => {
   
     if (!productname) return "Tên sản phẩm không được để trống!";
     if (!material) return "Chất liệu sản phẩm không được để trống!";
-   // if (!description[0].description.trim()) return "Mô tả sản phẩm không được để trống!";
+    if (!description[0].description.trim()) return "Mô tả sản phẩm không được để trống!";
     if (!sellingprice || isNaN(sellingprice) || sellingprice <= 0)
       return "Giá bán phải là số và lớn hơn 0!";
     if (!gender) return "Vui lòng chọn giới tính cho sản phẩm!";
@@ -184,16 +184,20 @@ const CreateProductDialog = ({ open, handleClose }) => {
     try {
       // Kiểm tra tính hợp lệ
       const validationError = validateProduct(ProductCreate);
+      setIsLoading(true); // Hiển thị trạng thái tải
+
       if (validationError) {
         toast.error(validationError, {
           position: "top-right",
-          autoClose: 3000,
+          autoClose:500,
           hideProgressBar: true,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
-          progress: undefined,
+          //progress: undefined,
         });
+        setIsLoading(false); // Hiển thị trạng thái tải
+
         return; // Dừng nếu có lỗi
       }
   
