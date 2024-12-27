@@ -59,7 +59,7 @@ const Products = () => {
   const handleConfirmDelete = async () => {
     if (selectedId) {
       setIsDeleting(true); // Hiển thị trạng thái chờ
-      await dispatch(deleteProduct(selectedId)); // Thực hiện xóa
+      await dispatch(deleteProduct(selectedId)); 
       setIsDeleting(false); // Tắt trạng thái chờ
       toast.success("Sản phẩm đã được xóa!", {
               position: "top-right",
@@ -71,13 +71,13 @@ const Products = () => {
               progress: undefined,
             });      
     }
-    handleCloseDialog(); // Đóng dialog
+    handleCloseDialog(); 
   };
 
   const handleSaveEdit = () => {
     setIsEditing(false);
     setSelectedProduct(null);
-    window.location.reload(); // Làm mới trang
+    window.location.reload(); 
   };
 
   const handleCancelEdit = () => {

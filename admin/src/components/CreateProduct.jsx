@@ -156,55 +156,82 @@ const CreateProductDialog = ({ open, handleClose }) => {
     });
   };
 
-const handleSubmit = async () => {
-  try {
-    // Tạo FormData để gửi toàn bộ dữ liệu sản phẩm và ảnh
-    setIsLoading(true); // Hiển thị trạng thái tải
-
-    const formData = new FormData();
-
-    // Thêm thông tin sản phẩm vào FormData
-    formData.append("name", ProductCreate.productname);
-    formData.append("material_Id", ProductCreate.material);
-    formData.append("description", ProductCreate.description[0].description);
-    formData.append("status", "active");
-    formData.append("price", ProductCreate.sellingprice);
-    formData.append("gender_Id", parseInt(ProductCreate.gender));
-    formData.append("category_Id", ProductCreate.category);
-
-    // Thêm ảnh vào FormData nếu có
-    if (ProductCreate.Image) {
-      formData.append("imageFile", ProductCreate.Image);
-    }
-
-    // Gửi yêu cầu tạo sản phẩm kèm ảnh
-    const productResponse = await fetch("http://localhost:5224/api/product", {
-      method: "POST",
-      body: formData,
-    });
-   const createdProduct = await productResponse.json();
-
-  // Kiểm tra nếu yêu cầu không thành công
-  if (!productResponse.ok) {
-    if (createdProduct.message === "Product name already exists.") {
-      alert("Product name already exists.");
-    } else {
-      throw new Error(`Product creation failed: ${createdProduct.message || "Unknown error"}`);
-    }
-  } else {
-    // Thành công: thực hiện logic khác (nếu có)
-    //const createdProduct = await productResponse.json();
-    const productId = createdProduct.id;
-
-    if (!productId) {
-      throw new Error("Failed to retrieve product ID");
-    }
-
-    // Tạo các variants cho sản phẩm
-    const variantRequests = [];
-    ProductCreate.colors.forEach((colorId) => {
-      ProductCreate.sizes.forEach((sizeId) => {
-        variantRequests.push(
+  const validateProduct = (product) => {
+    const {
+      productname,
+      material,
+      description,
+      sellingprice,
+      gender,
+      category,
+      colors,
+      sizes,
+    } = product;
+  
+    if (!productname) return "Tên sản phẩm không được để trống!";
+    if (!material) return "Chất liệu sản phẩm không được để trống!";
+   // if (!description[0].description.trim()) return "Mô tả sản phẩm không được để trống!";
+    if (!sellingprice || isNaN(sellingprice) || sellingprice <= 0)
+      return "Giá bán phải là số và lớn hơn 0!";
+    if (!gender) return "Vui lòng chọn giới tính cho sản phẩm!";
+    if (!category) return "Danh mục sản phẩm không được để trống!";
+    if (colors.length === 0) return "Vui lòng chọn ít nhất một màu!";
+    if (sizes.length === 0) return "Vui lòng chọn ít nhất một kích cỡ!";
+    return null; // Không có lỗi
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      // Kiểm tra tính hợp lệ
+      const validationError = validateProduct(ProductCreate);
+      if (validationError) {
+        toast.error(validationError, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        return; // Dừng nếu có lỗi
+      }
+  
+      setIsLoading(true); // Hiển thị trạng thái tải
+  
+      // Tạo FormData để gửi toàn bộ dữ liệu sản phẩm và ảnh
+      const formData = new FormData();
+      formData.append("name", ProductCreate.productname);
+      formData.append("material_Id", ProductCreate.material);
+      formData.append("description", ProductCreate.description[0].description);
+      formData.append("status", "active");
+      formData.append("price", ProductCreate.sellingprice);
+      formData.append("gender_Id", parseInt(ProductCreate.gender));
+      formData.append("category_Id", ProductCreate.category);
+      if (ProductCreate.Image) formData.append("imageFile", ProductCreate.Image);
+  
+      // Gửi yêu cầu tạo sản phẩm
+      const productResponse = await fetch("http://localhost:5224/api/product", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const createdProduct = await productResponse.json();
+      if (!productResponse.ok) {
+        if (createdProduct.message === "Product name already exists.") {
+          toast.error("Sản phẩm này đã tồn tại!", { /* Cấu hình toast */ });
+        } else {
+          throw new Error(createdProduct.message || "Unknown error");
+        }
+        return;
+      }
+  
+      // Thành công: Tạo Variants
+      const productId = createdProduct.id;
+      if (!productId) throw new Error("Failed to retrieve product ID");
+  
+      const variantRequests = ProductCreate.colors.flatMap((colorId) =>
+        ProductCreate.sizes.map((sizeId) =>
           fetch("http://localhost:5224/api/variant", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -217,45 +244,23 @@ const handleSubmit = async () => {
               category_Id: ProductCreate.category,
             }),
           })
-        );
-      });
-    });
-
-    // Gửi tất cả yêu cầu tạo Variants
-    await Promise.all(variantRequests);
-
-    // Thông báo thành công
-    toast.success("Sản phẩm đã được tạo thành công!", {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: true,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    });    resetForm();
-    handleClose();
-    //alert("Product created successfully!");
-
-    window.location.reload(); // Làm mới trang
-  }
-    
-
-  } catch (error) {
-    console.error(error);
-    toast.error("Tạo sản phẩm không thành công !", {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: true,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-    });
-    }finally {
-    setIsLoading(false); // Tắt trạng thái tải
-  }
-};
+        )
+      );
+  
+      await Promise.all(variantRequests);
+  
+      toast.success("Sản phẩm đã được tạo thành công!", { /* Cấu hình toast */ });
+      resetForm();
+      handleClose();
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error("Tạo sản phẩm không thành công, vui lòng kiểm tra lại!", { /* Cấu hình toast */ });
+    } finally {
+      setIsLoading(false); // Tắt trạng thái tải
+    }
+  };
+  
 
   return (
     <div>
@@ -293,6 +298,7 @@ const handleSubmit = async () => {
                             handleInputChange("category", value ? value.id : null) // Lưu ID
                           }
                           renderInput={(params) => <TextField {...params} label="Category" />}
+                          required
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -302,6 +308,7 @@ const handleSubmit = async () => {
                         value={mockMaterials.find((mat) => mat.id === ProductCreate.material) || null}
                         onChange={(e, value) => handleInputChange("material", value ? value.id : "")}
                         renderInput={(params) => <TextField {...params} label="Material" />}
+                        
                       />
                     </Grid>
 
@@ -342,6 +349,7 @@ const handleSubmit = async () => {
     handleInputChange("colors", value.map((item) => item.id)) // Lưu ID
   }
   renderInput={(params) => <TextField {...params} label="Colors" />}
+  required
                 />
               </ListItem>
               <ListItem>
@@ -368,17 +376,7 @@ const handleSubmit = async () => {
   />
 </ListItem>
               <Divider />
-              {/* <ListItem>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={ProductCreate.gender === "Male"}
-                      onChange={() => handleInputChange("gender", "Male")}
-                    />
-                  }
-                  label="Male"
-                />
-              </ListItem> */}
+             
               <ListItem>
               <ListItemText
   primary={
@@ -399,6 +397,7 @@ const handleSubmit = async () => {
 
                   handleInputChange("sizes", newSizes); // Cập nhật state
                 }}
+                required
               />
             }
             label={size.label}

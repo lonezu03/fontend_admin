@@ -79,21 +79,48 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
       setFormData({ ...formData, Image: e.target.files[0] });
     }
   };
-
+  const validateProduct = (product) => {
+    const {
+      productname,
+      material,
+      description,
+      sellingprice,
+      gender,
+      category,
+      colors,
+      sizes,
+    } = product;
+  
+    if (!productname) return "Tên sản phẩm không được để trống!";
+    if (!material) return "Chất liệu sản phẩm không được để trống!";
+   // if (!description[0].description.trim()) return "Mô tả sản phẩm không được để trống!";
+    if (!sellingprice || isNaN(sellingprice) || sellingprice <= 0)
+      return "Giá bán phải là số và lớn hơn 0!";
+    if (!gender) return "Vui lòng chọn giới tính cho sản phẩm!";
+    if (!category) return "Danh mục sản phẩm không được để trống!";
+    if (colors.length === 0) return "Vui lòng chọn ít nhất một màu!";
+    if (sizes.length === 0) return "Vui lòng chọn ít nhất một kích cỡ!";
+    return null; // Không có lỗi
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.productname ||
-      !formData.material ||
-      !formData.category ||
-      formData.sellingprice <= 0
-    ) {
-      toast.error("Please fill in all required fields correctly.");
-     // return;
-    }
-
+    
     try {
+      const validationError = validateProduct(formData);
+          if (validationError) {
+            toast.error(validationError, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: true,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+            });
+            return; // Dừng nếu có lỗi
+          }
+
       setIsLoading(true); // Hiển thị trạng thái tải
 
       const formDataToSend = new FormData();
@@ -103,8 +130,8 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
       formDataToSend.append("image", formData.Image);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("status", "active");
-      formDataToSend.append("price", formData.price);
-      formDataToSend.append("sellingPrice", formData.sellingprice);
+      formDataToSend.append("price", formData.sellingprice);
+      //formDataToSend.append("sellingPrice", formData.sellingprice);
       formDataToSend.append("gender_Id", parseInt(formData.gender) || 0);
       formDataToSend.append("category_Id", formData.category);
 
@@ -279,7 +306,13 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
               />
             ))}
           </RadioGroup>
-
+ {/* Backdrop với CircularProgress */}
+      <Backdrop
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading} // Hiển thị khi đang tải
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField
