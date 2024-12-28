@@ -186,7 +186,7 @@ const EditProduct = ({ product, open, onSave, onCancel }) => {
       );
       
       await Promise.all(variantRequests);
-      toast.success("Sản phẩm đã được xóa!", {
+      toast.success("Sản phẩm đã được sửa thành công!", {
         position: "top-right",
         autoClose: 2000,
         hideProgressBar: true,
